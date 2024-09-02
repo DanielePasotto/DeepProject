@@ -29,7 +29,7 @@ def train(args):
 
     AnomalyCLIP_parameters = {"Prompt_length": args.n_ctx, "learnabel_text_embedding_depth": args.depth, "learnabel_text_embedding_length": args.t_n_ctx}
 
-    model, _ = AnomalyCLIP_lib.load("ViT-L/14@336px", device=device, design_details = AnomalyCLIP_parameters)
+    model, _ = AnomalyCLIP_lib.load("ViT-L/14@336px", device=device)
     model.eval()
 
     train_data = Dataset(root=args.train_data_path, transform=preprocess, target_transform=target_transform, dataset_name = args.dataset)
@@ -39,7 +39,6 @@ def train(args):
     prompt_learner = AnomalyCLIP_PromptLearner(model.to("cpu"), AnomalyCLIP_parameters)
     prompt_learner.to(device)
     model.to(device)
-    model.visual.DAPM_replace(DPAM_layer = 20)
     ##########################################################################################
     optimizer = torch.optim.Adam(list(prompt_learner.parameters()), lr=args.learning_rate, betas=(0.5, 0.999))
 
@@ -58,7 +57,7 @@ def train(args):
 
         for items in tqdm(train_dataloader):
             image = items['img'].to(device)
-            label =  items['anomaly']
+            label = items['anomaly']
 
             gt = items['img_mask'].squeeze().to(device)
             gt[gt > 0.5] = 1
@@ -69,7 +68,7 @@ def train(args):
                 # DPAM_layer represents the number of layer refined by DPAM from top to bottom
                 # DPAM_layer = 1, no DPAM is used
                 # DPAM_layer = 20 as default
-                image_features, patch_features = model.encode_image(image, args.features_list, DPAM_layer = 20)
+                image_features, patch_features = model.encode_image(image)
                 image_features = image_features / image_features.norm(dim=-1, keepdim=True)
                     
            ####################################
@@ -114,10 +113,10 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("AnomalyCLIP", add_help=True)
     parser.add_argument("--train_data_path", type=str, default="./data/visa", help="train dataset path")
-    parser.add_argument("--save_path", type=str, default='./checkpoint', help='path to save results')
+    parser.add_argument("--save_path", type=str, default='./checkpoints', help='path to save results')
 
 
-    parser.add_argument("--dataset", type=str, default='mvtec', help="train dataset name")
+    parser.add_argument("--dataset", type=str, default='visa', help="train dataset name")
 
     parser.add_argument("--depth", type=int, default=9, help="image size")
     parser.add_argument("--n_ctx", type=int, default=12, help="zero shot")

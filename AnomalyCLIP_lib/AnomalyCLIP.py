@@ -390,7 +390,6 @@ class VisionTransformer(nn.Module):
         return x
 
 
-from thop import profile
 class AnomalyCLIP(nn.Module):
     def __init__(self,
                  embed_dim: int,
